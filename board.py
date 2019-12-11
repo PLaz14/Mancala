@@ -10,9 +10,9 @@ class Board:
         for i in self.p1side:
             row1 += '{:>3}'.format(i)
         row1 += '--'
-        row2 = '{:>2}' + '---'*6 + '{:>2}'.format(self.p1goal, self.p2goal)
+        row2 = '{:>2}' + '---' * 6 + '{:>2}'.format(self.p1goal, self.p2goal)
         row3 = '--'
         for i in self.p2side:
             row3 += '{:>3}'.format(i)
         row3 += '--'
-        return row1+'\n'+row2+'\n'+row3
+        return row1 + '\n' + row2 + '\n' + row3
