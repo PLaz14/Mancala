@@ -44,7 +44,8 @@ class Board:
                 stones-=1
                 if stones == 0:
                     return
-            pos = 0
+            pos = -1
+            row = 2
 
     def movep2(self, pos):
         self.goagainp2 = False
@@ -58,7 +59,6 @@ class Board:
                 stones-=1
                 if stones == 0:
                     return
-            pos = 0
 
             self.board[1][0]+=1
             stones-=1
@@ -67,13 +67,15 @@ class Board:
                 return
 
             row = 2
-            pos = 0
+            pos = -1
             while pos+1 != len(self.board[row]):
                 self.board[row][pos+1]+=1
                 pos+=1
                 stones-=1
                 if stones == 0:
                     return
+            pos = 6
+            row = 0
             
 
 
@@ -85,29 +87,53 @@ if __name__ == "__main__":
     c = 1
     empty = [0]*6
     while b.board[0]!=empty and b.board[2]!=empty:
+        pos = 0
         if c%2 == 1:
             player = 1
         elif c%2 == 0:
             player = 2
 
-        pos = input("Player {}, choose your space to move from...".format(player)) 
+        try:
+            pos = input("Player {}, choose your space to move from...".format(player)) 
+        except:
+            pass
         while not -1<pos-1<6:
-            pos = input("Player {}, choose your space to move from...".format(player))
-        
+            try:
+                pos = input("Player {}, choose your space to move from...".format(player))
+            except:
+                continue
+
         if player == 1:
+            b.movep1(pos-1) 
+            print(b)
             while b.goagainp1:
-                b.movep1(pos-1) 
+                try:
+                    pos = input("Player 1, go again...")
+                except:
+                    continue
+                b.movep1(pos-1)
                 print(b)
         elif player == 2:
+            b.movep2(pos-1)
+            print(b)
             while b.goagainp2:
+                try:
+                    pos = input("Player 2, go again...")
+                except:
+                    continue
                 b.movep2(pos-1)
                 print(b)
 
 
         c+=1
-    if b.board[0] == empty: b.board[1][1]+=sum(b.board[2])
-    elif b.board[2] == empty: b.board[1][0]+=sum(b.board[0])
+    if b.board[0] == empty: 
+        b.board[1][1]+=sum(b.board[2])
+        b.board[2]=empty
+    elif b.board[2] == empty: 
+        b.board[1][0]+=sum(b.board[0])
+        b.board[0]=empty
     score = '{}-{}'.format(max(b.board[1]), min(b.board[1]))
     if b.board[1].index(max(b.board[1])) == 0: winner = 2
     else: winner = 1
+    print(b)
     print("Player {} won! Final score ".format(winner)+score)
