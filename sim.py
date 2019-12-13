@@ -1,17 +1,22 @@
+"""
+This program will play a single game of mancala a certain number of times and print the results of...
+...how many times each player wins or how many draws occur. Each position that the each player moves from is randomized.
+"""
+
 import numpy as np
 from game import Board
 import random as r
 
 
 def cycle():
-    startboard = np.array([[4] * 6, [0] * 2, [4] * 6])
+    startboard = np.array([[4] * 6, [0] * 2, [4] * 6])  # starting board
     b = Board(startboard)
 
     c = 1
     player = 0
     empty = [0] * 6
     moves = 0
-    while b.board[0] != empty and b.board[2] != empty:
+    while b.board[0] != empty and b.board[2] != empty:  # while at least one side of the board has stones in it
         pos = r.randint(1, 6)
         if c % 2 == 1:
             player = 1
@@ -56,7 +61,7 @@ def cycle():
 
 
 if __name__ == "__main__":
-    it = 10000
+    it = 10000  # number of games to be played
     p1, p2, d, moves = 0, 0, 0, 0
     for i in range(it):
         w, m = cycle()
