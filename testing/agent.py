@@ -29,13 +29,13 @@ def testaimnist():
     plt.imshow(x_train[0])
     plt.show()
 
-def testairl():
+def testaimountcar():
     env = gym.make("MountainCar-v0")
     env.reset()
 
     LEARNING_RATE = 0.1
     DISCOUNT = 0.95
-    EPISODES = 25000
+    EPISODES = 2000
 
     SHOW_EVERY = 500
 
@@ -77,7 +77,7 @@ def testairl():
                 new_q = (1-LEARNING_RATE) * current_q + LEARNING_RATE * (reward + DISCOUNT * max_future_q)
                 q_table[discrete_state+(action, )] = new_q
             elif new_state[0] >= env.goal_position:
-                print(episode)
+                print(f"{episode}")
                 q_table[discrete_state+(action, )] = 0
 
             discrete_state = new_discrete_state
@@ -86,13 +86,23 @@ def testairl():
         ep_rewards.append(episode_reward)
         if not episode % SHOW_EVERY:
             average_reward = sum(ep_rewards[-SHOW_EVERY:])/len(ep_rewards[-SHOW_EVERY:])
+            aggr_ep_rewards['ep'].append(episode)
+            aggr_ep_rewards['avg'].append(average_reward)
+            aggr_ep_rewards['min'].append(min(ep_rewards[-SHOW_EVERY:]))
+            aggr_ep_rewards['max'].append(max(ep_rewards[-SHOW_EVERY:]))
 
+            print(f"episode: {episode} avg: {average_reward} min: {min(ep_rewards[-SHOW_EVERY:])} max: {max(ep_rewards[-SHOW_EVERY:])}")
 
     env.close()
+    plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['avg'], label='avg')
+    plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['min'], label='min')
+    plt.plot(aggr_ep_rewards['ep'], aggr_ep_rewards['max'], label='max')
+    plt.legend(loc=4)
+    plt.show()
 
 def get_discrete_state(state, env, dows):
     discrete_state = (state - env.observation_space.low) / dows
     return tuple(discrete_state.astype(np.int))
 
 if __name__ == "__main__":
-    testairl()
+    testaimountcar()
