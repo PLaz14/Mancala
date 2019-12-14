@@ -20,8 +20,8 @@ def game():
             if event.type == pg.QUIT:
                 return
 
-        rot, x1, y1 = key1move(rot, x1, y1)
-        rot, x1, y1 = check(rot, x1, y1, maze1in, maze1out)
+        rot, x1, y1 = usermove(rot, x1, y1)
+        rot, x1, y1 = check1(rot, x1, y1, maze1in, maze1out)
 
         run.fill((0, 0, 0))
 
@@ -34,7 +34,7 @@ def game():
 
         pg.display.update()
 
-def key1move(rot, x1, y1):
+def usermove(rot, x1, y1):
     vel = 10
     k = pg.key.get_pressed()
 
@@ -49,7 +49,7 @@ def key1move(rot, x1, y1):
 
     return rot, x1, y1
 
-def check(rot, x1, y1, mazein, mazeout):
+def check1(rot, x1, y1, mazein, mazeout):
     if min(map(lambda p: p[0], mazein))<x1<max(map(lambda p: p[0], mazein)) and min(map(lambda p: p[1], mazein))<y1<max(map(lambda p: p[1], mazein)):
         x1, y1 = 150, 300
         rot = 0
