@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from matplotlib import style
+import time
 
 style.use('ggplot')
 pg.init()
@@ -17,12 +18,12 @@ laps = 0
 vel = 10
 
 ### RL variables ###
-SIZE = 10
+SIZE = 15
 HM_EPISODES = 25000
 MOVE_PENALTY = 1
 WALL_PENALTY = 200
 LAP_REWARD = 25
-epsilon = 1.0
+epsilon = 0.9
 EPS_DECAY = 0.9999
 SHOW_EVERY = 1000
 
@@ -32,17 +33,15 @@ LEARNING_RATE = 0.1
 DISCOUNT = 0.95
 
 ### make the q-table ###
-# i = north distance to closest wall
-# j = east distance to closest wall
-# k = west distance to closest wall
+# x = x-position of the ball
+# y = y-position of the ball
+# r = rotation of the ball
 if start_q_table is None:
     q_table = {}
-    for i in range(-SIZE + 1, SIZE):
-        for j in range(-SIZE + 1, SIZE):
-            for k in range(-SIZE + 1, SIZE):
-                for l in range(-SIZE + 1, SIZE):
-                    for M in range(-SIZE + 1, SIZE):
-                        q_table[(i, j, k, l, M)] = [np.random.uniform(-25, 0) for t in range(5)]
+    for x in range(100, 700):
+        for y in range(100, 500):
+            for r in range(-127, 128):
+                q_table[(x, y), r*m.pi/64] = [np.random.uniform(-25, 0) for t in range(2)]
 else:
     with open(start_q_table, "rb") as f:
         q_table = pickle.load(f)
@@ -54,7 +53,6 @@ class RL():
         self.rot = 0
         self.x = 150
         self.y = 300
-        #self.xn, self.yn, self.xe, self.ye, self.xw, self.yw, self.xne, self.yne, self.xnw, self.ynw = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         self.vel = 10
         self.mazeout = [(100, 100), (700, 100), (700, 500), (100, 500)]
         self.mazein = [(200, 200), (600, 200), (600, 400), (200, 400)]
@@ -63,6 +61,7 @@ class RL():
         # forward distance
         self.distance = 0
 
+        self.finddistances()
         #self.play(69)
 
     ### main method ###
@@ -73,21 +72,12 @@ class RL():
         while True:
             pg.time.delay(100)
             for event in pg.event.get():
-                if event.type == pg.QUIT:
+                if event.type == pg.QUIT or self.state:
                     return
 
             # rotate based on key pressed by user
             #self.testrot()
-            self.move()
             self.check()
-
-            self.xn, self.yn = self.x + (1000 * m.sin(self.rot)), self.y - (1000 * m.cos(self.rot))
-            self.xe, self.ye = self.x - (1000 * m.cos(self.rot)), self.y - (1000 * m.sin(self.rot))
-            self.xw, self.yw = self.x + (1000 * m.cos(self.rot)), self.y + (1000 * m.sin(self.rot))
-            self.xne, self.yne = self.x + (1000 * m.sin(self.rot - (m.pi / 4))), self.y - (
-                        1000 * m.cos(self.rot - (m.pi / 4)))
-            self.xnw, self.ynw = self.x + (1000 * m.sin(self.rot + (m.pi / 4))), self.y - (
-                        1000 * m.cos(self.rot + (m.pi / 4)))
 
             self.run.fill((0, 0, 0))
 
@@ -108,26 +98,32 @@ class RL():
             epRect.center = (650, 50)
             self.run.blit(ep, epRect)
 
-            # check to see if a lap has passed
-            self.lap()
-
             # draws guiding lines
-            '''pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xn), int(self.yn)))
+            pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xn), int(self.yn)))
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xe), int(self.ye)))
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xw), int(self.yw)))
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xne), int(self.yne)))
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xnw), int(self.ynw)))
-'''
+
             # drawing circles of intersection with the wall
-            #self.finddistances()
+            self.finddistances()
 
             pg.display.update()
 
+    def update(self):
+        self.xn, self.yn = self.x + (1000 * m.sin(self.rot)), self.y - (1000 * m.cos(self.rot))
+        self.xe, self.ye = self.x - (1000 * m.cos(self.rot)), self.y - (1000 * m.sin(self.rot))
+        self.xw, self.yw = self.x + (1000 * m.cos(self.rot)), self.y + (1000 * m.sin(self.rot))
+        self.xne, self.yne = self.x + (1000 * m.sin(self.rot - (m.pi / 4))), self.y - (
+                1000 * m.cos(self.rot - (m.pi / 4)))
+        self.xnw, self.ynw = self.x + (1000 * m.sin(self.rot + (m.pi / 4))), self.y - (
+                1000 * m.cos(self.rot + (m.pi / 4)))
+
     def action(self, choice):
         if choice == 0:
-            self.rot -= 0.2
+            self.rot -= m.pi/64
         elif choice == 1:
-            self.rot += 0.2
+            self.rot += m.pi/64
 
     ### method for testing the class ###
     def testrot(self):
@@ -168,120 +164,99 @@ class RL():
     def finddistances(self):
         self.dn, self.de, self.dw, self.dne, self.dnw = [], [], [], [], []
         for p in range(len(self.mazeout)):
-            px = self.detformx((self.xn, self.yn), self.mazeout[p], self.mazeout[p - 1])
-            py = self.detformy((self.xn, self.yn), self.mazeout[p], self.mazeout[p - 1])
+            #print(self.mazeout[p], self.mazeout[p - 1])
             try:
+                px, py = self.line_intersection((self.xn, self.yn), (self.mazeout[p], self.mazeout[p - 1]))
                 self.dn.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xe, self.ye), self.mazeout[p], self.mazeout[p - 1])
-            py = self.detformy((self.xe, self.ye), self.mazeout[p], self.mazeout[p - 1])
+                self.dn.append(0)
             try:
+                px, py = self.line_intersection((self.xe, self.ye), (self.mazeout[p], self.mazeout[p - 1]))
                 self.de.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xw, self.yw), self.mazeout[p], self.mazeout[p - 1])
-            py = self.detformy((self.xw, self.yw), self.mazeout[p], self.mazeout[p - 1])
+                self.de.append(0)
             try:
+                px, py = self.line_intersection((self.xw, self.yw), (self.mazeout[p], self.mazeout[p - 1]))
                 self.dw.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xne, self.yne), self.mazeout[p], self.mazeout[p - 1])
-            py = self.detformy((self.xne, self.yne), self.mazeout[p], self.mazeout[p - 1])
+                self.dw.append(0)
             try:
+                px, py = self.line_intersection((self.xne, self.yne), (self.mazeout[p], self.mazeout[p - 1]))
                 self.dne.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xnw, self.ynw), self.mazeout[p], self.mazeout[p - 1])
-            py = self.detformy((self.xnw, self.ynw), self.mazeout[p], self.mazeout[p - 1])
+                self.dne.append(0)
             try:
+                px, py = self.line_intersection((self.xnw, self.ynw), (self.mazeout[p], self.mazeout[p - 1]))
                 self.dnw.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
+                self.dnw.append(0)
         for p in range(len(self.mazein)):
-            px = self.detformx((self.xn, self.yn), self.mazein[p], self.mazein[p - 1])
-            py = self.detformy((self.xn, self.yn), self.mazein[p], self.mazein[p - 1])
+            #print(self.mazein[p], self.mazein[p-1])
             try:
+                px, py = self.line_intersection((self.xn, self.yn), (self.mazein[p], self.mazein[p - 1]))
                 self.dn.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xe, self.ye), self.mazein[p], self.mazein[p - 1])
-            py = self.detformy((self.xe, self.ye), self.mazein[p], self.mazein[p - 1])
+                self.dn.append(0)
             try:
+                px, py = self.line_intersection((self.xe, self.ye), (self.mazein[p], self.mazein[p - 1]))
                 self.de.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xw, self.yw), self.mazein[p], self.mazein[p - 1])
-            py = self.detformy((self.xw, self.yw), self.mazein[p], self.mazein[p - 1])
+                self.de.append(0)
             try:
+                px, py = self.line_intersection((self.xw, self.yw), (self.mazein[p], self.mazein[p - 1]))
                 self.dw.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xne, self.yne), self.mazein[p], self.mazein[p - 1])
-            py = self.detformy((self.xne, self.yne), self.mazein[p], self.mazein[p - 1])
+                self.dw.append(0)
             try:
+                px, py = self.line_intersection((self.xne, self.yne), (self.mazein[p], self.mazein[p - 1]))
                 self.dne.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
-            px = self.detformx((self.xnw, self.ynw), self.mazein[p], self.mazein[p - 1])
-            py = self.detformy((self.xnw, self.ynw), self.mazein[p], self.mazein[p - 1])
+                self.dne.append(0)
             try:
+                px, py = self.line_intersection((self.xnw, self.ynw), (self.mazein[p], self.mazein[p - 1]))
                 self.dnw.append(self.distform((px, py)))
-                #pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
+                pg.draw.circle(self.run, (255, 255, 255), (int(px), int(py)), 3, 0)
             except:
-                pass
+                self.dnw.append(0)
 
-        self.dn, self.de, self.dw, self.dne, self.dnw = min(self.dn), min(self.de), min(self.dw), min(self.dne), min(
-            self.dnw)
+        self.dn, self.de, self.dw, self.dne, self.dnw = int(min(self.dn)), int(min(self.de)), int(min(self.dw)), int(min(self.dne)), int(min(self.dnw))
 
         return self.dn, self.de, self.dw, self.dne, self.dnw
 
     def distform(self, p):
         return m.hypot(self.x - p[0], self.y - p[1])
 
-    def detformx(self, s, a, b):
-        A = np.linalg.det(np.array([[self.x, self.y], [s[0], s[1]]]))
-        B = np.linalg.det(np.array([[self.x, 1], [s[0], 1]]))
-        C = np.linalg.det(np.array([[a[0], a[1]], [b[0], b[1]]]))
-        D = np.linalg.det(np.array([[a[0], 1], [b[0], 1]]))
-        E = np.linalg.det(np.array([[self.x, 1], [s[0], 1]]))
-        F = np.linalg.det(np.array([[self.y, 1], [s[1], 1]]))
-        G = np.linalg.det(np.array([[a[0], 1], [b[0], 1]]))
-        H = np.linalg.det(np.array([[a[1], 1], [b[1], 1]]))
+    def line_intersection(self, s, line2):
+        xdiff = (self.x - s[0], line2[0][0] - line2[1][0])
+        ydiff = (self.y - s[1], line2[0][1] - line2[1][1])
 
-        try:
-            return np.linalg.det(np.array([[A, B], [C, D]])) / np.linalg.det(np.array([[E, F], [G, H]]))
-        except:
-            return -1
+        def det(a, b):
+            return a[0] * b[1] - a[1] * b[0]
 
-    def detformy(self, s, a, b):
-        A = np.linalg.det(np.array([[self.x, self.y], [s[0], s[1]]]))
-        B = np.linalg.det(np.array([[self.y, 1], [s[1], 1]]))
-        C = np.linalg.det(np.array([[a[0], a[1]], [b[0], b[1]]]))
-        D = np.linalg.det(np.array([[a[1], 1], [b[1], 1]]))
-        E = np.linalg.det(np.array([[self.x, 1], [s[1], 1]]))
-        F = np.linalg.det(np.array([[self.y, 1], [s[1], 1]]))
-        G = np.linalg.det(np.array([[a[0], 1], [b[0], 1]]))
-        H = np.linalg.det(np.array([[a[1], 1], [b[1], 1]]))
+        div = det(xdiff, ydiff)
+        if div == 0:
+            raise Exception('lines do not intersect')
 
-        try:
-            return np.linalg.det(np.array([[A, B], [C, D]])) / np.linalg.det(np.array([[E, F], [G, H]]))
-        except:
-            return -1
+        d = (det(*((self.x, self.y), s)), det(*line2))
+        x = det(d, xdiff) / div
+        y = det(d, ydiff) / div
+        return x, y
 
 ### Inititating Q-Learning ###
+
 episode_rewards = []
+game = RL()
 for episode in range(HM_EPISODES):
-    game = RL()
+    #print(episode)
     if episode % SHOW_EVERY == 0:
         print(f"on #{episode}, epsilon is {epsilon}")
         print(f"{SHOW_EVERY} ep mean: {np.mean(episode_rewards[-SHOW_EVERY:])}")
@@ -291,22 +266,26 @@ for episode in range(HM_EPISODES):
 
     episode_reward = 0
     for i in range(200):
-        game.play(episode)
-        obs = game.finddistances()
+        game.update()
+        obs = ((game.x, game.y), game.rot)
+        #print(obs)
         if np.random.random() > epsilon:
             action = np.argmax(q_table[obs])
         else:
             action = np.random.randint(0, 2)
         game.action(action)
+        game.move()
+        game.check()
+        game.lap()
 
         if game.state:
             reward = -WALL_PENALTY
-        elif game.lap:
+        elif game.laps > 0:
             reward = LAP_REWARD
         else:
             reward = -MOVE_PENALTY
 
-        new_obs = game.finddistances()
+        new_obs = ((game.x, game.y), game.rot)
         max_future_q = np.max(q_table[new_obs])
         current_q = q_table[obs][action]
 
@@ -327,6 +306,9 @@ plt.plot([i for i in range(len(moving_avg))], moving_avg)
 plt.ylabel(f"Reward {SHOW_EVERY}ma")
 plt.xlabel("episode #")
 plt.show()
+
+with open(f"q-table/qtable-{int(time.time())}.pickle", "wb") as f:
+    pickle.dump(q_table, f)
 
 #########################################################
 
