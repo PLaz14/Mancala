@@ -36,16 +36,22 @@ DISCOUNT = 0.95
 # x = x-position of the ball
 # y = y-position of the ball
 # r = rotation of the ball
+print('Building Q-Table...')
+start = time.time()
 if start_q_table is None:
-    q_table = {}
-    for x in range(100, 700):
-        for y in range(100, 500):
+    q_table = dict()
+    for x in range(100, 701, vel):
+        if not x%100:
+            print('through:', x-100)
+        for y in range(100, 501, vel):
             for r in range(-127, 128):
-                q_table[(x, y), r*m.pi/64] = [np.random.uniform(-25, 0) for t in range(2)]
+                q_table[(x, y), round(r*m.pi/16, 5)] = [np.random.uniform(-25, 0) for t in range(3)]
 else:
     with open(start_q_table, "rb") as f:
         q_table = pickle.load(f)
 
+end = time.time()
+print('operation took {:.2f} seconds'.format(end-start))
 
 ### RL class and methods ###
 class RL():
@@ -60,9 +66,10 @@ class RL():
         self.laps = 0
         # forward distance
         self.distance = 0
+        self.state = False
 
         self.finddistances()
-        #self.play(69)
+        self.play(69)
 
     ### main method ###
     def play(self, episode):
@@ -76,8 +83,10 @@ class RL():
                     return
 
             # rotate based on key pressed by user
-            #self.testrot()
+            self.testrot()
+            self.move()
             self.check()
+            self.lap()
 
             self.run.fill((0, 0, 0))
 
@@ -98,6 +107,7 @@ class RL():
             epRect.center = (650, 50)
             self.run.blit(ep, epRect)
 
+            '''
             # draws guiding lines
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xn), int(self.yn)))
             pg.draw.line(self.run, (0, 0, 255), (int(self.x), int(self.y)), (int(self.xe), int(self.ye)))
@@ -107,7 +117,7 @@ class RL():
 
             # drawing circles of intersection with the wall
             self.finddistances()
-
+            '''
             pg.display.update()
 
     def update(self):
@@ -121,18 +131,20 @@ class RL():
 
     def action(self, choice):
         if choice == 0:
-            self.rot -= m.pi/64
+            self.rot -= m.pi/16
         elif choice == 1:
-            self.rot += m.pi/64
+            self.rot += m.pi/16
+        elif choice == 2:
+            self.rot = self.rot
 
     ### method for testing the class ###
     def testrot(self):
         k = pg.key.get_pressed()
 
         if k[pg.K_LEFT]:
-            self.rot -= 0.2
+            self.rot -= m.pi/16
         if k[pg.K_RIGHT]:
-            self.rot += 0.2
+            self.rot += m.pi/16
 
     def move(self):
         # flipped for better start
@@ -251,12 +263,18 @@ class RL():
         y = det(d, ydiff) / div
         return x, y
 
+    def round(self, n):
+        if n > 7:
+            return int(m.ceil(n / 10.0)) * 10
+        else:
+            return round(n, 5)
+
 ### Inititating Q-Learning ###
 
 episode_rewards = []
 game = RL()
 for episode in range(HM_EPISODES):
-    #print(episode)
+    #print(game.round(157.87))
     if episode % SHOW_EVERY == 0:
         print(f"on #{episode}, epsilon is {epsilon}")
         print(f"{SHOW_EVERY} ep mean: {np.mean(episode_rewards[-SHOW_EVERY:])}")
@@ -267,7 +285,7 @@ for episode in range(HM_EPISODES):
     episode_reward = 0
     for i in range(200):
         game.update()
-        obs = ((game.x, game.y), game.rot)
+        obs = ((game.round(game.x), game.round(game.y)), game.round(game.rot))
         #print(obs)
         if np.random.random() > epsilon:
             action = np.argmax(q_table[obs])
@@ -277,6 +295,8 @@ for episode in range(HM_EPISODES):
         game.move()
         game.check()
         game.lap()
+        '''if show:
+            game.play(episode)'''
 
         if game.state:
             reward = -WALL_PENALTY
@@ -285,7 +305,7 @@ for episode in range(HM_EPISODES):
         else:
             reward = -MOVE_PENALTY
 
-        new_obs = ((game.x, game.y), game.rot)
+        new_obs = ((game.round(game.x), game.round(game.y)), game.round(game.rot))
         max_future_q = np.max(q_table[new_obs])
         current_q = q_table[obs][action]
 
