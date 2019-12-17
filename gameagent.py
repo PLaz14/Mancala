@@ -19,12 +19,12 @@ class Agent:
 
         ### Initializing the Q-Table ###
         if qtable is None:
-            size = 17
+            size = 10
             self.table = {}
             print('Building randomized q-table...', end='')
             start = time.time()
             for a in range(size):
-                print('through', a)
+                #print('through', a)
                 for b in range(size):
                     for c in range(size):
                         for d in range(size):
@@ -34,8 +34,10 @@ class Agent:
                                     self.table[index] = [np.random.uniform(-25, 0) for i in range(6)]
             end = time.time()
             print('done (took: {:.2f} seconds)'.format(end - start))
+            print('saving q-table...')
             with open("q-tables/qtable-main.pickle", "wb") as f:
                 pickle.dump(self.table, f)
+            print('done')
         else:
             with open(qtable, 'rb') as f:
                 self.table = pickle.load(f)
@@ -73,12 +75,12 @@ class Agent:
 
 
 if __name__ == "__main__":
-    A = Agent()
+    A = Agent("q-tables/qtable-main.pickle")
     startboard = np.array([[4] * 6, [0] * 2, [4] * 6])
     b = Board(startboard)
     print(b)
 
-    c, player = 1, 0
+    c, player = np.random.randint(1,3), 0
     empty = [0] * 6  # used to check if one side of the board is empty
     while b.board[0] != empty and b.board[2] != empty:
         pos = 0
@@ -137,11 +139,15 @@ if __name__ == "__main__":
     else:
         winner = 0
     print(b)
-    A.game_reward+=(b.board[1][0]-b.board[[1][1]])
+    A.game_reward+=(b.board[1][0]-b.board[1][1])
     if winner == 0:
         print("It's a draw! Final score " + score)
         print('AI game reward: ', A.game_reward)
     else:
         print("Player {} won! Final score ".format(winner) + score)
         print('AI game reward: ', A.game_reward)
+    print('saving q-table...')
+    with open("q-tables/qtable-main.pickle", "wb") as f:
+        pickle.dump(A.table, f)
+    print('done')
 
