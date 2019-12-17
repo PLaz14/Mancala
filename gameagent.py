@@ -34,10 +34,6 @@ class Agent:
                                     self.table[index] = [np.random.uniform(-25, 0) for i in range(6)]
             end = time.time()
             print('done (took: {:.2f} seconds)'.format(end - start))
-            print('saving q-table...')
-            with open("q-tables/qtable-main.pickle", "wb") as f:
-                pickle.dump(self.table, f)
-            print('done')
         else:
             print('importing Q-Table...', end='')
             with open(qtable, 'rb') as f:
