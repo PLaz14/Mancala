@@ -21,10 +21,10 @@ class Agent:
         if qtable is None:
             size = 10
             self.table = {}
-            print('Building randomized q-table...', end='')
+            print('building randomized q-table...', end='')
             start = time.time()
             for a in range(size):
-                #print('through', a)
+                # print('through', a)
                 for b in range(size):
                     for c in range(size):
                         for d in range(size):
@@ -39,21 +39,30 @@ class Agent:
                 pickle.dump(self.table, f)
             print('done')
         else:
+            print('importing Q-Table...', end='')
             with open(qtable, 'rb') as f:
                 self.table = pickle.load(f)
+            print('done')
 
     ### Initiate Q-Learning ###
-    def runtime(self, b):
+    def runtime(self, b, p):
         move_reward = 0
-        side = b.board[0].copy()
+        if p == 1:  # if the AI is player 1
+            side = b.board[2].copy()
+        else:
+            side = b.board[0].copy()
         obs = (side[0], side[1], side[2], side[3], side[4], side[5])
         if np.random.random() > self.epsilon:
             action = np.argmax(self.table[obs])
         else:
-            action = np.random.randint(0, 5)
-
-        b.movep2(action)  # take the move
-        print('AI picked position', action+1)
+            action = np.random.randint(0, 6)
+            while side[action] == 0:
+                action = np.random.randint(0, 6)
+        if p == 1:
+            b.movep1(action)  # make the move
+        else:
+            b.movep2(action)
+        print('AI picked position', action + 1)
         for i in range(self.game_reward, b.board[1][0]):
             move_reward += self.REWARD
 
@@ -69,8 +78,6 @@ class Agent:
                     move_reward + self.DISCOUNT * max_future_q)
         self.table[obs][action] = new_q  # update the q-table
 
-        self.epsilon*=self.EPS_DECAY
-
         return move_reward
 
 
@@ -80,7 +87,7 @@ if __name__ == "__main__":
     b = Board(startboard)
     print(b)
 
-    c, player = np.random.randint(1,3), 0
+    c, player = np.random.randint(1, 3), 0
     empty = [0] * 6  # used to check if one side of the board is empty
     while b.board[0] != empty and b.board[2] != empty:
         pos = 0
@@ -117,11 +124,13 @@ if __name__ == "__main__":
                 b.movep1(pos - 1)
                 print(b)
         elif player == 2:
-            A.game_reward += A.runtime(b)
+            A.game_reward += A.runtime(b, player)
+            A.epsilon *= A.EPS_DECAY
             print(b)
             while b.goagainp2:
                 print('AI went again...')
-                A.game_reward += A.runtime(b)
+                A.game_reward += A.runtime(b, player)
+                A.epsilon *= A.EPS_DECAY
                 print(b)
 
         c += 1
@@ -139,7 +148,7 @@ if __name__ == "__main__":
     else:
         winner = 0
     print(b)
-    A.game_reward+=(b.board[1][0]-b.board[1][1])
+    A.game_reward += (b.board[1][0] - b.board[1][1])
     if winner == 0:
         print("It's a draw! Final score " + score)
         print('AI game reward: ', A.game_reward)
@@ -150,4 +159,3 @@ if __name__ == "__main__":
     with open("q-tables/qtable-main.pickle", "wb") as f:
         pickle.dump(A.table, f)
     print('done')
-
