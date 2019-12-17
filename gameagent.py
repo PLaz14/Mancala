@@ -34,7 +34,7 @@ class Agent:
                                     self.table[index] = [np.random.uniform(-25, 0) for i in range(6)]
             end = time.time()
             print('done (took: {:.2f} seconds)'.format(end - start))
-            with open(f"q-tables/qtable-{int(time.time())}.pickle", "wb") as f:
+            with open("q-tables/qtable-main.pickle", "wb") as f:
                 pickle.dump(self.table, f)
         else:
             with open(qtable, 'rb') as f:
