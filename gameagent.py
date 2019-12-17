@@ -19,7 +19,7 @@ class Agent:
 
         ### Initializing the Q-Table ###
         if qtable is None:
-            size = 10
+            size = 24
             self.table = {}
             print('building randomized q-table...', end='')
             start = time.time()
@@ -27,11 +27,8 @@ class Agent:
                 # print('through', a)
                 for b in range(size):
                     for c in range(size):
-                        for d in range(size):
-                            for e in range(size):
-                                for f in range(size):
-                                    index = (a, b, c, d, e, f)
-                                    self.table[index] = [np.random.uniform(-25, 0) for i in range(6)]
+                        index = (a, b, c)
+                        self.table[index] = [np.random.uniform(-25, 0) for x in range(6)]
             end = time.time()
             print('done (took: {:.2f} seconds)'.format(end - start))
         else:
@@ -47,7 +44,7 @@ class Agent:
             side = b.board[2].copy()
         else:
             side = b.board[0].copy()
-        obs = (side[0], side[1], side[2], side[3], side[4], side[5])
+        obs = (side[0]+side[1], side[2]+side[3], side[4]+side[5])
         if np.random.random() > self.epsilon:
             action = np.argmax(self.table[obs])
         else:
@@ -58,12 +55,12 @@ class Agent:
             b.movep1(action)  # make the move
         else:
             b.movep2(action)
-        print('AI picked position', action + 1)
+        #print('AI picked position', action + 1)
         for i in range(self.game_reward, b.board[1][0]):
             move_reward += self.REWARD
 
         new_side = b.board[0].copy()
-        new_obs = (new_side[0], new_side[1], new_side[2], new_side[3], new_side[4], new_side[5])
+        new_obs = (new_side[0]+new_side[1], new_side[2]+new_side[3], new_side[4]+new_side[5])
         max_future_q = np.max(self.table[new_obs])
         current_q = self.table[obs][action]
 

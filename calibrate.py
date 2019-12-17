@@ -33,7 +33,6 @@ if __name__ == "__main__":
         c, player = np.random.randint(1, 3), 0
         empty = [0] * 6  # used to check if one side of the board is empty
         while b.board[0] != empty and b.board[2] != empty:
-            pos = 0
             if c % 2 == 1:
                 player = 1
             elif c % 2 == 0:
@@ -42,13 +41,13 @@ if __name__ == "__main__":
             if player == 1:
                 agent.game_reward += agent.runtime(b, player)
                 while b.goagainp1:
-                    print('agentI went again...')
+                    #print('agentI went again...')
                     agent.game_reward += agent.runtime(b, player)
                 agent.epsilon *= agent.EPS_DECAY
             elif player == 2:
                 agent.game_reward += agent.runtime(b, player)
                 while b.goagainp2:
-                    print('agentI went again...')
+                    #print('agentI went again...')
                     agent.game_reward += agent.runtime(b, player)
                 agent.epsilon *= agent.EPS_DECAY
 
@@ -66,13 +65,13 @@ if __name__ == "__main__":
             winner = 1
         else:
             winner = 0
-        print(b)
+        #print(b)
         agent.game_reward += (b.board[1][0] - b.board[1][1])
-        if not i%100:
-            print('Game {}:'.format(i))
-            if winner == 0:
-                print("It's a draw! Final score " + score)
-            else:
-                print("Player {} won! Final score ".format(winner) + score)
+        #if not i%100:
+        print('Game {}: '.format(i), end='')
+        if winner == 0:
+            print("It's a draw! Final score " + score)
+        else:
+            print("Player {} won! Final score ".format(winner) + score)
         s.total_reward.append(agent.game_reward)
     print(s)
