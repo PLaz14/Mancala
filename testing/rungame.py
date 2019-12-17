@@ -327,7 +327,7 @@ plt.ylabel(f"Reward {SHOW_EVERY}ma")
 plt.xlabel("episode #")
 plt.show()
 
-with open(f"q-table/qtable-{int(time.time())}.pickle", "wb") as f:
+with open(f"q-tables/qtable-{int(time.time())}.pickle", "wb") as f:
     pickle.dump(q_table, f)
 
 #########################################################

@@ -91,8 +91,8 @@ if __name__ == "__main__":
     b = Board(startboard)
     print(b)
 
-    c = 1
-    empty = [0] * 6
+    c, player = 1, 0
+    empty = [0] * 6 # used to check if one side of the board is empty
     while b.board[0] != empty and b.board[2] != empty:
         pos = 0
         if c % 2 == 1:
@@ -101,15 +101,15 @@ if __name__ == "__main__":
             player = 2
 
         try:
-            pos = int(input(("Player {}, choose your space to move from...".format(player))))
-            if pos == 99:
+            pos = int(input(("Player {}, choose your space to move from...\n".format(player))))
+            if pos == 99: # force exit the program
                 break
         except:
             pass
         while not -1 < pos - 1 < 6:
             try:
-                pos = int(input(("Player {}, choose your space to move from...".format(player))))
-                if pos == 99:
+                pos = int(input(("Player {}, choose your space to move from...\n".format(player))))
+                if pos == 99: # same
                     break
             except:
                 continue
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             print(b)
             while b.goagainp1:
                 try:
-                    pos = int(input("Player 1, go again..."))
+                    pos = int(input("Player 1, go again...\n"))
                     if pos == 99:
                         break
                 except:
@@ -131,7 +131,7 @@ if __name__ == "__main__":
             print(b)
             while b.goagainp2:
                 try:
-                    pos = int(input("Player 2, go again..."))
+                    pos = int(input("Player 2, go again...\n"))
                     if pos == 99:
                         break
                 except:
